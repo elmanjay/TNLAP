@@ -426,7 +426,7 @@ def create_model(
 
 if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    instance_name = "H50P250A1(A)" 
+    instance_name = "L30P180A3(A)" 
     instance_dir = os.path.join(base_dir, "Instances")
     name = os.path.join(instance_dir, f"{instance_name}.json")
 
@@ -440,7 +440,7 @@ if __name__ == "__main__":
     os.makedirs(sol_dir, exist_ok=True)
     # ------------------------------------------
 
-    alpha_value = 0.1
+    alpha_value = 0.5
     canvas, pages, article, layouts, resorts, article_resorts, resort_page, layouts_pages, box_layouts, box_geomtery, hull_layout_box, hull_article, article_length, hull_params, article_priority = parse_json_from_file(name)
 
     model = create_model(
