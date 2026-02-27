@@ -1,0 +1,19 @@
+Instances: time (TL=1800sec)
+
+A1: TL
+A2: 950s
+A3: 1500s
+A4: TL
+A5: 1200s
+A6: 1350s
+A7: 1100s
+A8: 1250s
+A9: TL
+A10: 1200s
+A11: 1500s
+A12: TL
+A13: 1280s
+A14: TL
+
+
+
