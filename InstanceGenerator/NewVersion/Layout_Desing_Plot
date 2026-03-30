@@ -1,0 +1,134 @@
+import random
+from typing import List, Tuple
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import math
+
+random.seed(42)
+
+# Rechteck: (x, y, width, height)
+Rect = Tuple[int, int, int, int]
+
+def split_rect(rect: Rect, min_width=2, min_height=3) -> Tuple[Rect, Rect]:
+    x, y, w, h = rect
+
+    # Prüfe, ob ein Split überhaupt möglich ist
+    can_split_horizontally = w > 2 * min_width
+    can_split_vertically = h > 2 * min_height
+
+    if can_split_horizontally and can_split_vertically:
+        split_vertical = random.choice([True, False])
+    elif can_split_horizontally:
+        split_vertical = True
+    elif can_split_vertically:
+        split_vertical = False
+    else:
+        # Nicht teilbar
+        return rect, None
+
+    if split_vertical:
+        # Wähle Split-Punkt, sodass beide Seiten >= min_width
+        split = random.randint(min_width, w - min_width)
+        r1 = (x, y, split, h)
+        r2 = (x + split, y, w - split, h)
+    else:
+        # Split horizontal, beide Seiten >= min_height
+        split = random.randint(min_height, h - min_height)
+        r1 = (x, y, w, split)
+        r2 = (x, y + split, w, h - split)
+
+    return r1, r2
+
+def generate_layout(cols=6, rows=10, min_boxes=2, max_boxes=5, min_width=2, min_height=3) -> List[Rect]: #hier sonst 100 und 30
+    target_boxes = random.randint(min_boxes, max_boxes)
+    rects = [(0, 0, cols, rows)]
+    attempts = 0
+    max_attempts = 50
+
+    while len(rects) < target_boxes and attempts < max_attempts:
+        attempts += 1
+        idx = random.randrange(len(rects))
+        rect = rects.pop(idx)
+        
+        r1, r2 = split_rect(rect, min_width, min_height)
+        if r2 is None:
+            # Rechteck nicht teilbar, zurücklegen
+            rects.append(r1)
+            continue
+        rects.extend([r1, r2])
+
+    return rects
+"""
+def print_layout_info(layout: List[Rect]):
+    for box in layout:
+        print(f" Box: x={box[0]}, y={box[1]}, w={box[2]}, h={box[3]}")
+
+
+def plot_layout(layout: List[Rect], cols=6, rows=10): # hier dann 100
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, cols)
+    ax.set_ylim(0, rows)
+    ax.set_aspect('equal')
+    ax.invert_yaxis()  # y=0 oben
+
+    for idx, (x, y, w, h) in enumerate(layout):
+        rect = patches.Rectangle((x, y), w, h, edgecolor='black', facecolor=f"C{idx}", lw=2)
+        ax.add_patch(rect)
+
+    plt.show()
+
+
+
+print("Layout Informationen (mit Mindestgröße 2x3):")
+print_layout_info(layout)
+print("\nGraphisches Layout:")
+#plot_layout(layout)
+print(layout)
+"""
+
+def layout_to_tuple(layout: List[Rect]) -> Tuple[Rect, ...]:
+    return tuple(sorted(layout))
+
+unique_layouts = set()
+all_layouts = []
+while len(all_layouts) < 30: #hier je nachdem wie viele Layouts man erstellen will
+    layout = generate_layout(min_width=2, min_height=3) #hier dann 30
+    layout_key = layout_to_tuple(layout)
+
+    if layout_key not in unique_layouts:
+        unique_layouts.add(layout_key)
+        all_layouts.append(layout)
+print(all_layouts)
+
+# nur zum plotten:
+num_layouts = len(all_layouts)
+cols = 5  # Anzahl der Spalten im Raster
+rows = math.ceil(num_layouts / cols)
+
+fig, axes = plt.subplots(rows, cols, figsize=(cols*3, rows*4))
+
+# Flatten axes, falls es ein 2D Array ist
+axes = axes.flatten()
+
+for i, layout in enumerate(all_layouts):
+    ax = axes[i]
+    # Berechne Größe des Layouts für Limits
+    max_x = max(x + w for (x, y, w, h) in layout)
+    max_y = max(y + h for (x, y, w, h) in layout)
+    
+    ax.set_xlim(0, max_x)
+    ax.set_ylim(0, max_y)
+    ax.set_aspect('equal')
+    ax.invert_yaxis()
+    ax.axis('off')  # Achsen ausblenden
+
+    for idx, (x, y, w, h) in enumerate(layout):
+        rect = patches.Rectangle((x, y), w, h, edgecolor='black', facecolor=f"C{idx}", lw=2)
+        ax.add_patch(rect)
+
+# Leere Subplots ausblenden
+for j in range(num_layouts, len(axes)):
+    axes[j].axis('off')
+
+plt.tight_layout()
+plt.show()
