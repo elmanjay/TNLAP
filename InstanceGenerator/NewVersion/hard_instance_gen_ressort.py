@@ -181,17 +181,17 @@ def create_instance(
     #                                       aber beide jetzt auf hard-Niveau)
     # ------------------------------------------------------------------
     counter      = 1
-    shell_layout_box = {}
+    shells_layout_box = {}
     shell_params     = {}
     number_shells    = []
 
     for layout_id, boxes in geometry_layout_box.items():
-        shell_layout_box[layout_id] = {}
+        shells_layout_box[layout_id] = {}
         for box_id, box_data in boxes.items():
             num_shells = rng.randint(shells_per_box[0], shells_per_box[1])
             character  = box_data["character"]
             shells_lst = list(range(counter, counter + num_shells))
-            shell_layout_box[layout_id][box_id] = shells_lst
+            shells_layout_box[layout_id][box_id] = shells_lst
 
             for shell_id in shells_lst:
                 # HARD: max_val aus engerem oberen Bereich gezogen (0.75–1.0 statt 0.5–1.0)
@@ -225,13 +225,13 @@ def create_instance(
     for s, cat in shell_to_category.items():
         category_to_shells.setdefault(cat, []).append(s)
 
-    shell_article = {
+    shells_article = {
         art: category_to_shells.get(cat, [])
         for art, cat in article_to_category.items()
     }
-    for a in shell_article:
-        shell_article[a] = sorted(shell_article[a])
-    shell_article = dict(sorted(shell_article.items()))
+    for a in shells_article:
+        shells_article[a] = sorted(shells_article[a])
+    shells_article = dict(sorted(shells_article.items()))
 
     # ------------------------------------------------------------------
     # Artikellängen
@@ -260,61 +260,60 @@ def create_instance(
     }
 
 # ------------------------------------------------------------------
-    # Resort
+    # section
     # ------------------------------------------------------------------
-    num_resorts = max(3, number_pages // 5)
-    resorts = list(range(1, num_resorts + 1))
+    num_sections = max(3, number_pages // 5)
+    sections = list(range(1, num_sections + 1))
 
-    # Artikel gleichmäßig auf Resorts aufteilen
+    # Artikel gleichmäßig auf sections aufteilen
     article_list_tmp = article.copy()
     rng.shuffle(article_list_tmp)
-    article_resorts = {r: [] for r in resorts}
+    article_sections = {r: [] for r in sections}
     for idx, a in enumerate(article_list_tmp):
-        article_resorts[idx % num_resorts + 1].append(a)
+        article_sections[idx % num_sections + 1].append(a)
 
-    resort_page = {p: [] for p in pages}
-    block_size = len(pages) // num_resorts
+    sections_page = {p: [] for p in pages}
+    block_size = len(pages) // num_sections
 
-    boundaries = {r_idx * block_size: resorts[r_idx] for r_idx in range(num_resorts)}
+    boundaries = {r_idx * block_size: sections[r_idx] for r_idx in range(num_sections)}
 
     for idx, page in enumerate(pages):
             if idx in boundaries:
-                resort_page[page] = [boundaries[idx]]
+                sections_page[page] = [boundaries[idx]]
             else:
-                r_idx = min(idx // block_size, num_resorts - 1)
-                r = resorts[r_idx]
-                r_next = resorts[r_idx + 1] if r_idx < num_resorts - 1 else None
-                r_prev = resorts[r_idx - 1] if r_idx > 0 else None
+                r_idx = min(idx // block_size, num_sections - 1)
+                r = sections[r_idx]
+                r_next = sections[r_idx + 1] if r_idx < num_sections - 1 else None
+                r_prev = sections[r_idx - 1] if r_idx > 0 else None
 
                 if r_next:
-                    resort_page[page] = [r, r_next]
+                    sections_page[page] = [r, r_next]
                 elif r_prev:
-                    resort_page[page] = [r_prev, r]
+                    sections_page[page] = [r_prev, r]
                 else:
-                    resort_page[page] = [r]
+                    sections_page[page] = [r]
 
-    resort_page[pages[-1]] = [resorts[-1]]
+    sections_page[pages[-1]] = [sections[-1]]
 
     # ------------------------------------------------------------------
     # Output
     # ------------------------------------------------------------------
     return {
-        "canvas":               canvas,
         "pages":                pages,
         "layouts":              layouts,
         "article":              article,
-        "hulls":                shells,
+        "shells":                shells,
         "layouts_pages":        pages_layouts,
         "box_layouts":          box_layouts,
         "geometry_layout_box":  geometry_layout_box,
-        "hull_layout_box":      shell_layout_box,
-        "hull_article":         shell_article,
+        "shells_layout_box":      shells_layout_box,
+        "shells_article":         shells_article,
         "article_length":       article_lengths,
-        "hull_params":          shell_params,
+        "shell_params":          shell_params,
         "article_priority":     article_priority,
-        "resorts":              resorts,
-        "article_resorts":      article_resorts,
-        "resort_page":          resort_page,
+        "sections":              sections,
+        "article_sections":      article_sections,
+        "sections_page":          sections_page,
     }
 
 
@@ -322,16 +321,16 @@ def create_instance(
 # Aufruf
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    pages_gl   = 40
-    article_gl = 200
-    seed_gl    = 8
-    for p_type in ["A", "B"]:
-        instance = create_instance(
-            number_pages=pages_gl,
-            number_article=article_gl,
-            p_type_fc=p_type,
-            seed=seed_gl,
-        )
-        name = f"HardP{pages_gl}A{article_gl}V1({p_type}).json"
-        save_instance_to_json(instance, name)
-        print(f"✅  {name} gespeichert.")
+    for seed_gl in range(133,134):
+        pages_gl   = 5
+        article_gl = 25
+        for p_type in ["A", "B"]:
+            instance = create_instance(
+                number_pages=pages_gl,
+                number_article=article_gl,
+                p_type_fc=p_type,
+                seed=seed_gl,
+            )
+            name = f"HardP{pages_gl}A{article_gl}V1({p_type})({seed_gl}).json"
+            save_instance_to_json(instance, name)
+            print(f"✅  {name} gespeichert.")

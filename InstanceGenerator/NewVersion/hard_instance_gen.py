@@ -181,17 +181,17 @@ def create_instance(
     #                                       aber beide jetzt auf hard-Niveau)
     # ------------------------------------------------------------------
     counter      = 1
-    shell_layout_box = {}
+    shells_layout_box = {}
     shell_params     = {}
     number_shells    = []
 
     for layout_id, boxes in geometry_layout_box.items():
-        shell_layout_box[layout_id] = {}
+        shells_layout_box[layout_id] = {}
         for box_id, box_data in boxes.items():
             num_shells = rng.randint(shells_per_box[0], shells_per_box[1])
             character  = box_data["character"]
             shells_lst = list(range(counter, counter + num_shells))
-            shell_layout_box[layout_id][box_id] = shells_lst
+            shells_layout_box[layout_id][box_id] = shells_lst
 
             for shell_id in shells_lst:
                 # HARD: max_val aus engerem oberen Bereich gezogen (0.75–1.0 statt 0.5–1.0)
@@ -225,13 +225,13 @@ def create_instance(
     for s, cat in shell_to_category.items():
         category_to_shells.setdefault(cat, []).append(s)
 
-    shell_article = {
+    shells_article = {
         art: category_to_shells.get(cat, [])
         for art, cat in article_to_category.items()
     }
-    for a in shell_article:
-        shell_article[a] = sorted(shell_article[a])
-    shell_article = dict(sorted(shell_article.items()))
+    for a in shells_article:
+        shells_article[a] = sorted(shells_article[a])
+    shells_article = dict(sorted(shells_article.items()))
 
     # ------------------------------------------------------------------
     # Artikellängen
@@ -260,32 +260,31 @@ def create_instance(
     }
 
     # ------------------------------------------------------------------
-    # Resort (1-zu-1 wie bisher)
+    # section (1-zu-1 wie bisher)
     # ------------------------------------------------------------------
-    resorts        = [1]
-    article_resorts = {1: article.copy()}
-    resort_page    = {p: resorts.copy() for p in pages}
+    sections        = [1]
+    article_sections = {1: article.copy()}
+    sections_page    = {p: sections.copy() for p in pages}
 
     # ------------------------------------------------------------------
     # Output
     # ------------------------------------------------------------------
     return {
-        "canvas":               canvas,
         "pages":                pages,
         "layouts":              layouts,
         "article":              article,
-        "hulls":                shells,
+        "shells":                shells,
         "layouts_pages":        pages_layouts,
         "box_layouts":          box_layouts,
         "geometry_layout_box":  geometry_layout_box,
-        "hull_layout_box":      shell_layout_box,
-        "hull_article":         shell_article,
+        "shells_layout_box":      shells_layout_box,
+        "shells_article":         shells_article,
         "article_length":       article_lengths,
-        "hull_params":          shell_params,
+        "shell_params":          shell_params,
         "article_priority":     article_priority,
-        "resorts":              resorts,
-        "article_resorts":      article_resorts,
-        "resort_page":          resort_page,
+        "sections":              sections,
+        "article_sections":      article_sections,
+        "sections_page":          sections_page,
     }
 
 
@@ -293,10 +292,9 @@ def create_instance(
 # Aufruf
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    pages_gl   = 30
-    article_gl = pages_gl * 5   # 150 Artikel
-    seed_gl    = 42
-
+    pages_gl   = 10
+    article_gl = 70
+    seed_gl    = 232
     for p_type in ["A", "B"]:
         instance = create_instance(
             number_pages=pages_gl,
@@ -304,6 +302,6 @@ if __name__ == "__main__":
             p_type_fc=p_type,
             seed=seed_gl,
         )
-        name = f"HardP{pages_gl}A{article_gl}V1({p_type}).json"
+        name = f"HardP{pages_gl}A{article_gl}V1({p_type})({seed_gl}).json"
         save_instance_to_json(instance, name)
         print(f"✅  {name} gespeichert.")
