@@ -5,8 +5,8 @@ from analyse import analyse_solution
 
 
 def create_model(
-    pages, article, layouts, resorts, article_resorts, resort_page, layouts_pages,
-    box_layouts, hull_layout_box, hull_article, article_length, hull_params,
+    pages, article, layouts, sections, article_sections, sections_page, layouts_pages,
+    box_layouts, shells_layout_box, shells_article, article_length, shell_params,
     article_priority, alpha_value, pre_filter, pref_filter_tolerance
 ):
     prioritäten = [1, 0.5, 0.1, 0]
@@ -26,56 +26,56 @@ def create_model(
 
 
     # ---------------------------
-    # Schritt A: Artikel pro Seite (Union über Resorts) einmal vorab berechnen
+    # Schritt A: Artikel pro Seite (Union über sections) einmal vorab berechnen
     # ---------------------------
     articles_on_page = {
-        j: set().union(*(set(article_resorts[r]) for r in resort_page[j]))
+        j: set().union(*(set(article_sections[r]) for r in sections_page[j]))
         for j in pages
     }
 
     # ---------------------------
-    # Längenfilter: hull_article_new
+    # Längenfilter: shells_article_new
     # ---------------------------
-    hull_article_new = {}
+    shells_article_new = {}
     for i in article:
-        hull_article_new[i] = []
-        for hull in hull_article[i]:
-            if (hull_params[hull]["min"] * (1 - (T_under + pref_filter_tolerance))
+        shells_article_new[i] = []
+        for shell in shells_article[i]:
+            if (shell_params[shell]["min"] * (1 - (T_under + pref_filter_tolerance))
                 <= article_length[i]
-                <= hull_params[hull]["max"] * (1 + T_over+ pref_filter_tolerance)):
-                hull_article_new[i].append(hull)
+                <= shell_params[shell]["max"] * (1 + T_over+ pref_filter_tolerance)):
+                shells_article_new[i].append(shell)
 
     # Big-M (wie bei dir)
-    max_hull_value = max(h["max"] for h in hull_params.values())
-    min_hull_value = max(h["min"] for h in hull_params.values())
+    max_shell_value = max(h["max"] for h in shell_params.values())
+    min_shell_value = max(h["min"] for h in shell_params.values())
     min_article_length = min(article_length.values())
     max_article_length = max(article_length.values())
-    M_length = max(max_hull_value, max_article_length) 
+    M_length = max(max_shell_value, max_article_length) 
     M_nb14 = g_under_fix + g_under_var * max(
-        abs(article_length[i] / hull_params[h]["min"] - 1)
+        abs(article_length[i] / shell_params[h]["min"] - 1)
         for i in article
-        for h in hull_article[i]
-        if hull_params[h]["min"] > 0
+        for h in shells_article[i]
+        if shell_params[h]["min"] > 0
     ) / T_under + 1 
 
     M_nb15 = g_over_fix + g_over_var * max(
-        abs(article_length[i] / hull_params[h]["max"] - 1)
+        abs(article_length[i] / shell_params[h]["max"] - 1)
         for i in article
-        for h in hull_article[i]
-        if hull_params[h]["max"] > 0
+        for h in shells_article[i]
+        if shell_params[h]["max"] > 0
     ) / T_over + 1
 
     # ---------------------------
-    # Schritt B: hull_layout_box_article mit hull_article_new
+    # Schritt B: shells_layout_box_article mit shells_article_new
     # ---------------------------
-    hull_layout_box_article = {}
+    shells_layout_box_article = {}
     for l in layouts:
-        hull_layout_box_article[l] = {}
-        for k in hull_layout_box[l]:
-            hull_layout_box_article[l][k] = {}
+        shells_layout_box_article[l] = {}
+        for k in shells_layout_box[l]:
+            shells_layout_box_article[l][k] = {}
             for i in article:
-                common = set(hull_layout_box[l][k]) & set(hull_article_new[i] if pre_filter else hull_article[i])
-                hull_layout_box_article[l][k][i] = list(common)  # ggf]
+                common = set(shells_layout_box[l][k]) & set(shells_article_new[i] if pre_filter else shells_article[i])
+                shells_layout_box_article[l][k][i] = list(common)  # ggf]
 
     model = Model("milp_model")
 
@@ -88,7 +88,7 @@ def create_model(
         for l in layouts_pages[j]:
             for k in box_layouts[l]:
                 for i in Aj:
-                    for h in hull_layout_box_article[l][k].get(i, []):
+                    for h in shells_layout_box_article[l][k].get(i, []):
                         x_keys.append((i, j, l, k, h))
 
     x = {}
@@ -115,7 +115,7 @@ def create_model(
         for j in pages
         for l in layouts_pages[j]
         for k in box_layouts[l]
-        for h in hull_layout_box[l][k]
+        for h in shells_layout_box[l][k]
     ]
     for (j, l, k, h) in z_keys:
         z[j, l, k, h] = model.addVar(
@@ -127,8 +127,8 @@ def create_model(
     #          nur kleine Fixes an constraint names, damit es nicht crasht.
     # ---------------------------------------------------------------------
 
-    min_hull = {}
-    max_hull = {}
+    min_shell = {}
+    max_shell = {}
     c_box = {}
     p_box = {}
     v = {}
@@ -157,14 +157,14 @@ def create_model(
     for j in pages:
         for l in layouts_pages[j]:
             for k in box_layouts[l]:
-                hull_length_min = [hull_params[h]["min"] for h in hull_layout_box[l][k]]
-                hull_length_max = [hull_params[h]["max"] for h in hull_layout_box[l][k]]
-                if len(hull_length_min) > 1:
-                    min_hull[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=max(hull_length_min), name=f"min_hull_{j}_{l}_{k}")
-                    max_hull[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=max(hull_length_max), name=f"max_hull_{j}_{l}_{k}")
+                shell_length_min = [shell_params[h]["min"] for h in shells_layout_box[l][k]]
+                shell_length_max = [shell_params[h]["max"] for h in shells_layout_box[l][k]]
+                if len(shell_length_min) > 1:
+                    min_shell[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=max(shell_length_min), name=f"min_shell_{j}_{l}_{k}")
+                    max_shell[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=max(shell_length_max), name=f"max_shell_{j}_{l}_{k}")
                 else:
-                    min_hull[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"min_hull_{j}_{l}_{k}")
-                    max_hull[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"max_hull_{j}_{l}_{k}")
+                    min_shell[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"min_shell_{j}_{l}_{k}")
+                    max_shell[j, l, k] = model.addVar(vtype=GRB.CONTINUOUS, name=f"max_shell_{j}_{l}_{k}")
 
     f_page = {j: model.addVar(lb=0, vtype=GRB.CONTINUOUS, name=f"f_page_{j}") for j in pages}
 
@@ -184,7 +184,7 @@ def create_model(
 
     # NB3
     model.addConstrs(
-        (quicksum(z[j, l, k, h] for h in hull_layout_box[l][k]) == y[j, l]
+        (quicksum(z[j, l, k, h] for h in shells_layout_box[l][k]) == y[j, l]
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB3"
     )
@@ -204,21 +204,21 @@ def create_model(
             for l in layouts_pages[j]
             for k in box_layouts[l]
             if i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
+            for h in shells_layout_box_article[l][k][i]
         ) <= 1 for i in article),
         name="NB5"
     )
 
     # NB6
     model.addConstrs(
-        (min_hull[j, l, k] == quicksum(hull_params[h]["min"] * z[j, l, k, h] for h in hull_layout_box[l][k])
+        (min_shell[j, l, k] == quicksum(shell_params[h]["min"] * z[j, l, k, h] for h in shells_layout_box[l][k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB6"
     )
 
     # NB7
     model.addConstrs(
-        (max_hull[j, l, k] == quicksum(hull_params[h]["max"] * z[j, l, k, h] for h in hull_layout_box[l][k])
+        (max_shell[j, l, k] == quicksum(shell_params[h]["max"] * z[j, l, k, h] for h in shells_layout_box[l][k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB7"
     )
@@ -228,7 +228,7 @@ def create_model(
         (quicksum(
             x[i, j, l, k, h]
             for i in articles_on_page[j] 
-            for h in hull_layout_box_article[l][k][i]
+            for h in shells_layout_box_article[l][k][i]
         ) == y[j, l] - v[j, l, k]
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB8"
@@ -239,8 +239,8 @@ def create_model(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) >= min_hull[j, l, k] - M_length * (delta_under[j, l, k] + v[j, l, k])
+            for h in shells_layout_box_article[l][k][i]
+        ) >= min_shell[j, l, k] - M_length * (delta_under[j, l, k] + v[j, l, k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB9a"
     )
@@ -250,8 +250,8 @@ def create_model(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) <= min_hull[j, l, k] + M_length * (1 - delta_under[j, l, k] - v[j, l, k])
+            for h in shells_layout_box_article[l][k][i]
+        ) <= min_shell[j, l, k] + M_length * (1 - delta_under[j, l, k] - v[j, l, k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB9b"
     )
@@ -261,8 +261,8 @@ def create_model(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) <= max_hull[j, l, k] + M_length
+            for h in shells_layout_box_article[l][k][i]
+        ) <= max_shell[j, l, k] + M_length
           * delta_over[j, l, k]
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB10a"
@@ -273,19 +273,18 @@ def create_model(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) >= max_hull[j, l, k] - M_length * (1 - delta_over[j, l, k])
+            for h in shells_layout_box_article[l][k][i]
+        ) >= max_shell[j, l, k] - M_length * (1 - delta_over[j, l, k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB10b"
     )
-
     # NB11a
     model.addConstrs(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) <= (1 + T_over) * max_hull[j, l, k] + M_length * e_over[j, l, k]
+            for h in shells_layout_box_article[l][k][i]
+        ) <= (1 - T_under) * min_shell[j, l, k] + M_length * (1 - e_under[j, l, k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB11a"
     )
@@ -295,30 +294,31 @@ def create_model(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) >= (1 + T_over) * max_hull[j, l, k] - M_length * (1 - e_over[j, l, k])
+            for h in shells_layout_box_article[l][k][i]
+        ) >= (1 - T_under) * min_shell[j, l, k] - M_length * (e_under[j, l, k] + v[j, l, k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB11b"
     )
-
     # NB12a
     model.addConstrs(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) <= (1 - T_under) * min_hull[j, l, k] + M_length * (1 - e_under[j, l, k])
+            for h in shells_layout_box_article[l][k][i]
+        ) <= (1 + T_over) * max_shell[j, l, k] + M_length * e_over[j, l, k]
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB12a"
     )
+
+    
 
     # NB12b
     model.addConstrs(
         (quicksum(
             x[i, j, l, k, h] * article_length[i]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
-        ) >= (1 - T_under) * min_hull[j, l, k] - M_length * (e_under[j, l, k] + v[j, l, k])
+            for h in shells_layout_box_article[l][k][i]
+        ) >= (1 + T_over) * max_shell[j, l, k] - M_length * (1 - e_over[j, l, k] + v[j, l, k])
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB12b"
     )
@@ -328,7 +328,7 @@ def create_model(
         (p_box[j, l, k] <= quicksum(
             x[i, j, l, k, h] * prio_dict[article_priority[i]]
             for i in articles_on_page[j]
-            for h in hull_layout_box_article[l][k][i]
+            for h in shells_layout_box_article[l][k][i]
         ) 
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
         name="NB13"
@@ -339,9 +339,9 @@ def create_model(
         (c_box_under[j, l, k] >=
          g_under_fix + g_under_var *
          quicksum(
-             x[i, j, l, k, h] * (article_length[i] / hull_params[h]["min"] - 1)
+             x[i, j, l, k, h] * (article_length[i] / shell_params[h]["min"] - 1)
              for i in articles_on_page[j]
-             for h in hull_layout_box_article[l][k][i]
+             for h in shells_layout_box_article[l][k][i]
          ) / T_under * -1
          - ((1 - delta_under[j, l, k]) + e_under[j, l, k]) * M_nb14
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
@@ -352,9 +352,9 @@ def create_model(
         (c_box_under[j, l, k] <=
          g_under_fix + g_under_var *
          quicksum(
-             x[i, j, l, k, h] * (article_length[i] / hull_params[h]["min"] - 1)
+             x[i, j, l, k, h] * (article_length[i] / shell_params[h]["min"] - 1)
             for i in articles_on_page[j]
-             for h in hull_layout_box_article[l][k][i]
+             for h in shells_layout_box_article[l][k][i]
          ) / T_under * -1
          + ((1 - delta_under[j, l, k]) + e_under[j, l, k]) * M_nb14
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
@@ -366,9 +366,9 @@ def create_model(
         (c_box_over[j, l, k] >=
          g_over_fix + g_over_var *
          quicksum(
-             x[i, j, l, k, h] * (article_length[i] / hull_params[h]["max"] - 1)
+             x[i, j, l, k, h] * (article_length[i] / shell_params[h]["max"] - 1)
              for i in articles_on_page[j]
-             for h in hull_layout_box_article[l][k][i]
+             for h in shells_layout_box_article[l][k][i]
          ) / T_over
          - ((1 - delta_over[j, l, k]) + e_over[j, l, k]) * M_nb15
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
@@ -379,9 +379,9 @@ def create_model(
         (c_box_over[j, l, k] <=
          g_over_fix + g_over_var *
          quicksum(
-             x[i, j, l, k, h] * (article_length[i] / hull_params[h]["max"] - 1)
+             x[i, j, l, k, h] * (article_length[i] / shell_params[h]["max"] - 1)
              for i in articles_on_page[j]
-             for h in hull_layout_box_article[l][k][i]
+             for h in shells_layout_box_article[l][k][i]
          ) / T_over
          + ((1 - delta_over[j, l, k]) + e_over[j, l, k]) * M_nb15
          for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
@@ -413,33 +413,19 @@ def create_model(
         name="NB18"
     )
 
-    # NB19
-    model.addConstrs(
-        (delta_over[j, l, k] <= y[j, l]
-         for j in pages for l in layouts_pages[j] for k in box_layouts[l]),
-        name="NB19"
-    )
-
-    # model.addConstrs(
-    # (v[j, l, k] == 0
-    #  for j in pages
-    #  for l in layouts_pages[j]
-    #  for k in box_layouts[l]),
-    # name="NB_no_empty_box")
-
     #model.addConstr(x[7,2,2,1,1] ==1)
     #model.addConstr(x[1,1,3,4,114] == 1 )
 
-    return model, hull_layout_box_article, x,y
+    return model, shells_layout_box_article, x,y
 
 
 if __name__ == "__main__":
 
     ############CONFIGURATION ############
-    instance_name = "HardP30A180V1(A)" 
+    instance_name = "HardP10A70V1(A)(232)" 
     alpha_value = 0.5
     pre_filter = True
-    pre_filter_tolerance = 0.3
+    pre_filter_tolerance = 0.6
 
 
 
@@ -456,11 +442,11 @@ if __name__ == "__main__":
     os.makedirs(sol_dir, exist_ok=True)
     # ------------------------------------------
 
-    canvas, pages, article, layouts, resorts, article_resorts, resort_page, layouts_pages, box_layouts, box_geomtery, hull_layout_box, hull_article, article_length, hull_params, article_priority = parse_json_from_file(name)
+    pages, article, layouts, sections, article_sections, sections_page, layouts_pages, box_layouts, box_geomtery, shells_layout_box, shells_article, article_length, shell_params, article_priority = parse_json_from_file(name)
 
-    model, hull_layout_box_article, x ,y = create_model(
-        pages, article, layouts, resorts, article_resorts, resort_page, layouts_pages,
-        box_layouts, hull_layout_box, hull_article, article_length, hull_params,
+    model, shells_layout_box_article, x ,y = create_model(
+        pages, article, layouts, sections, article_sections, sections_page, layouts_pages,
+        box_layouts, shells_layout_box, shells_article, article_length, shell_params,
         article_priority, alpha_value, pre_filter, pre_filter_tolerance
     )
 
@@ -485,8 +471,7 @@ if __name__ == "__main__":
     else:
         model.write(os.path.join(lp_dir, f"{instance_name}.lp"))
         model.write(os.path.join(sol_dir, f"{instance_name}.sol"))
-        analyse_solution(model, article_length, hull_params, article_priority)
-
+        analyse_solution(model, article_length, shell_params, article_priority)
 
 
     
