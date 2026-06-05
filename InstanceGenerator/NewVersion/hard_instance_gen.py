@@ -167,7 +167,9 @@ def create_instance(
     geometry_layout_box = {
         i + 1: {
             j + 1: {"x": x, "y": y, "w": w, "h": h, "character": w * h * 40 * 10}
-            for j, (x, y, w, h) in enumerate(lay)
+            for j, (x, y, w, h) in enumerate(
+                sorted(lay, key=lambda b: (b[1], b[0]))  # erst y (top-to-bottom), dann x (left-to-right)
+            )
         }
         for i, lay in enumerate(all_layouts)
     }
@@ -292,8 +294,8 @@ def create_instance(
 # Aufruf
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    pages_gl   = 10
-    article_gl = 70
+    pages_gl   = 5
+    article_gl = 25
     seed_gl    = 232
     for p_type in ["A", "B"]:
         instance = create_instance(

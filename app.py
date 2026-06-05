@@ -187,7 +187,7 @@ def box_chart(df, instance, width_px=460):
     for i in range(N_COLS):
         cx0=sx0+i*col_unit+0.02; cx1=sx0+(i+1)*col_unit-0.02
         col_header_rects.append({"x0":cx0,"x1":cx1,"y0":HEADER_TOP,"y1":HEADER_BOT,"col":i+1})
-        col_header_labels.append({"lx":(cx0+cx1)/2,"ly":(HEADER_TOP+HEADER_BOT)/2,"label":f"Sp. {i+1}"})
+        col_header_labels.append({"lx":(cx0+cx1)/2,"ly":(HEADER_TOP+HEADER_BOT)/2,"label":f"Col. {i+1}"})
     col_hdr_rects=alt.Chart(pd.DataFrame(col_header_rects)).mark_rect(fill=HEADER_FILL,stroke=HEADER_STROKE,strokeWidth=0.8,cornerRadius=2).encode(x=alt.X("x0:Q",axis=NO_AXIS,scale=xs),x2="x1:Q",y=alt.Y("y0:Q",axis=NO_AXIS,scale=ys),y2="y1:Q",tooltip=[alt.Tooltip("col:Q",title="Spalte")]).properties(**props())
     col_hdr_text=alt.Chart(pd.DataFrame(col_header_labels)).mark_text(fontSize=10,fontWeight="bold",color=HEADER_TEXT,baseline="middle",align="center").encode(x=alt.X("lx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ly:Q",axis=NO_AXIS,scale=ys),text=alt.Text("label:N")).properties(**props())
     hdr_line=alt.Chart(pd.DataFrame([{"x0":sx0,"x1":sx1,"y":sy0}])).mark_rule(stroke="#334155",strokeWidth=1.5).encode(x=alt.X("x0:Q",scale=xs),x2="x1:Q",y=alt.Y("y:Q",scale=ys)).properties(**props())
@@ -206,12 +206,12 @@ def box_chart(df, instance, width_px=460):
     sdf["row_end"]=(sdf["y1"]*ROW_SCALE).round().astype(int)
     sdf["n_cols"]=(sdf["w"]*COL_SCALE).round().astype(int)
     sdf["n_rows"]=(sdf["h"]*ROW_SCALE).round().astype(int)
-    sdf["col_label"]=sdf["n_cols"].astype(str)+" Sp. / "+sdf["n_rows"].astype(str)+" Z."
+    sdf["col_label"]=sdf["n_cols"].astype(str)+" Col. / "+sdf["n_rows"].astype(str)+" R."
     sdf["px0"]=sdf["x0"]+OX; sdf["px1"]=sdf["x1"]+OX
     sdf["py0"]=sdf["y0"]+OY; sdf["py1"]=sdf["y1"]+OY
     sdf["plx"]=(sdf["px0"]+sdf["px1"])/2; sdf["ply"]=(sdf["py0"]+sdf["py1"])/2
     sdf["psy"]=sdf["py0"]+0.10
-    box_rects=alt.Chart(sdf).mark_rect(stroke="#1e293b",strokeWidth=1.4).encode(x=alt.X("px0:Q",axis=NO_AXIS,scale=xs),x2="px1:Q",y=alt.Y("py0:Q",axis=NO_AXIS,scale=ys),y2="py1:Q",color=alt.value("#dbeafe"),tooltip=[alt.Tooltip("box:N",title="Box"),alt.Tooltip("col_start:Q",title="Sp. von"),alt.Tooltip("col_end:Q",title="Sp. bis"),alt.Tooltip("n_cols:Q",title="Breite (Sp.)"),alt.Tooltip("row_start:Q",title="Zeile von"),alt.Tooltip("row_end:Q",title="Zeile bis"),alt.Tooltip("n_rows:Q",title="Höhe (Zeilen)"),alt.Tooltip("num_shells:Q",title="#Shells"),alt.Tooltip("character:Q",title="capacity (chars)")]).properties(**props())
+    box_rects=alt.Chart(sdf).mark_rect(stroke="#1e293b",strokeWidth=1.4).encode(x=alt.X("px0:Q",axis=NO_AXIS,scale=xs),x2="px1:Q",y=alt.Y("py0:Q",axis=NO_AXIS,scale=ys),y2="py1:Q",color=alt.value("#dbeafe"),tooltip=[alt.Tooltip("box:N",title="Box"),alt.Tooltip("col_start:Q",title="Col. von"),alt.Tooltip("col_end:Q",title="Col. bis"),alt.Tooltip("n_cols:Q",title="Breite (Col.)"),alt.Tooltip("row_start:Q",title="Zeile von"),alt.Tooltip("row_end:Q",title="Zeile bis"),alt.Tooltip("n_rows:Q",title="Höhe (Zeilen)"),alt.Tooltip("num_shells:Q",title="#Shells"),alt.Tooltip("character:Q",title="capacity (chars)")]).properties(**props())
     box_num=alt.Chart(sdf).mark_text(fontSize=14,fontWeight="bold",color="#1e3a5f",baseline="middle",align="center").encode(x=alt.X("plx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ply:Q",axis=NO_AXIS,scale=ys),text=alt.Text("box:N")).properties(**props())
     box_sub=alt.Chart(sdf).mark_text(fontSize=8,color="#475569",baseline="top",align="center").encode(x=alt.X("plx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("psy:Q",axis=NO_AXIS,scale=ys),text=alt.Text("col_label:N")).properties(**props())
     return alt.layer(bg,margin_layer,ss_fill,hgrid,col_grid,page_border,ss_border,col_hdr_rects,col_hdr_text,hdr_line,axis_line,row_ticks,row_labels,box_rects,box_sub,box_num).configure_view(stroke=None)
@@ -282,13 +282,13 @@ with tab_explorer:
     _, H_grid = canvas_wh(instance)
     ROW_SCALE_ui = 100/H_grid
     tbl = df[["box","num_shells","w","h","character"]].copy()
-    tbl["Sp. von"] = (df["x0"]*1).round().astype(int)+1
-    tbl["Sp. bis"] = (df["x1"]*1).round().astype(int)
+    tbl["Col. von"] = (df["x0"]*1).round().astype(int)+1
+    tbl["Col. bis"] = (df["x1"]*1).round().astype(int)
     tbl["Zeile von"] = (df["y0"]*ROW_SCALE_ui).round().astype(int)+1
     tbl["Zeile bis"] = (df["y1"]*ROW_SCALE_ui).round().astype(int)
-    tbl["Breite (Sp.)"] = (df["w"]).round().astype(int)
-    tbl["Höhe (Z.)"] = (df["h"]*ROW_SCALE_ui).round().astype(int)
-    box_table = tbl[["box","Sp. von","Sp. bis","Breite (Sp.)","Zeile von","Zeile bis","Höhe (Z.)","num_shells","character"]].sort_values("box").reset_index(drop=True)
+    tbl["Breite (Col.)"] = (df["w"]).round().astype(int)
+    tbl["Höhe (R.)"] = (df["h"]*ROW_SCALE_ui).round().astype(int)
+    box_table = tbl[["box","Col. von","Col. bis","Breite (Col.)","Zeile von","Zeile bis","Höhe (R.)","num_shells","character"]].sort_values("box").reset_index(drop=True)
     box_table = box_table.rename(columns={"character":"capacity (chars)","num_shells":"#shells"})
     st.caption("⬇️ Box-Auswahl")
     st.dataframe(box_table, use_container_width=True, hide_index=True)
@@ -485,7 +485,7 @@ with tab_solution:
                                 f'background:{_grad_css(c1,c2)}"></div>'
                                 f'</div></div>')
                     html = (
-                        _swatch("#86efac", "Passt") +
+                        _swatch("#02A83F", "Passt") +
                         "<div style='height:8px'></div>" +
                         _swatch("#dc2626", "Leer") +
                         _grad_row("#70aaf5", "#1e40af", "Overfill") +
