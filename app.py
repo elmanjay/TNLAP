@@ -9,25 +9,35 @@ import altair as alt
 DEFAULT_GRID_W = 6
 DEFAULT_GRID_H = 10
 
+def get_ids(instance, key):
+    """Counts -> ID-Liste [1..n]. Akzeptiert auch alte Listen (rückwärtskompatibel)."""
+    v = instance.get(key, 0)
+    if isinstance(v, int):
+        return list(range(1, v + 1))
+    if isinstance(v, list):
+        return [int(x) for x in v]
+    return []
+
 def get_page_layouts(instance, page_id):
-    return [int(x) for x in instance.get("layouts_pages", {}).get(str(page_id), [])]
+    return [int(x) for x in instance.get("layouts_page", {}).get(str(page_id), [])]
 
 def get_layout_boxes(instance, layout_id):
-    return [int(b) for b in instance.get("box_layouts", {}).get(str(layout_id), [])]
+    return [int(b) for b in instance.get("boxes_layout", {}).get(str(layout_id), [])]
 
 def shells_for_layout_box(instance, layout_id, box_id):
     return [int(h) for h in instance.get("shells_layout_box", {}).get(str(layout_id), {}).get(str(box_id), [])]
 
 def shell_params(instance, shell_id):
-    return instance.get("shell_params", {}).get(str(shell_id), {"min": 0, "max": 0})
+    return instance.get("params_shell", {}).get(str(shell_id), {"min": 0, "max": 0})
 
 def article_len(instance, art_id):
-    return int(instance.get("article_length", {}).get(str(art_id), 0))
+    return int(instance.get("length_article", {}).get(str(art_id), 0))
 
 def article_prio(instance, art_id):
-    return str(instance.get("article_priority", {}).get(str(art_id), "?"))
+    return str(instance.get("priority_article", {}).get(str(art_id), "?"))
 
-def canvas_wh(instance):
+def raw_canvas_wh(instance):
+    """Return the coordinate extent used in the JSON instance."""
     geom_all = instance.get("geometry_layout_box", {})
     max_x, max_y = 0.0, 0.0
     for boxes in geom_all.values():
@@ -36,15 +46,37 @@ def canvas_wh(instance):
             max_y = max(max_y, float(g.get("y", 0)) + float(g.get("h", 0)))
     return (max_x or float(DEFAULT_GRID_W)), (max_y or float(DEFAULT_GRID_H))
 
+def canvas_wh(instance):
+    """Return the fixed display grid used by the dashboard.
+
+    The instance geometry may use a different numeric scale, e.g. y-values in
+    0..100 or 0..10. For the visualisation we normalize everything to a
+    stable 6 x 10 newspaper canvas so previews do not become vertically
+    stretched when the instance coordinate scale changes.
+    """
+    return float(DEFAULT_GRID_W), float(DEFAULT_GRID_H)
+
 def get_box_geometry(instance, layout_id, box_id):
     g = instance.get("geometry_layout_box", {}).get(str(layout_id), {}).get(str(box_id))
     if not g: return None
-    w, h = float(g.get("w", 0)), float(g.get("h", 0))
-    return {"x": float(g.get("x", 0)), "y": float(g.get("y", 0)), "w": w, "h": h,
-            "area": w*h, "character": float(g.get("character", g.get("area", w*h)))}
+
+    raw_w, raw_h = raw_canvas_wh(instance)
+    sx = float(DEFAULT_GRID_W) / raw_w if raw_w else 1.0
+    sy = float(DEFAULT_GRID_H) / raw_h if raw_h else 1.0
+
+    x = float(g.get("x", 0)) * sx
+    y = float(g.get("y", 0)) * sy
+    w = float(g.get("w", 0)) * sx
+    h = float(g.get("h", 0)) * sy
+
+    # Keep the original character capacity; only the drawing coordinates are normalized.
+    raw_box_w = float(g.get("w", 0))
+    raw_box_h = float(g.get("h", 0))
+    return {"x": x, "y": y, "w": w, "h": h,
+            "area": w*h, "character": float(g.get("character", g.get("area", raw_box_w*raw_box_h)))}
 
 def build_shell_to_articles(instance):
-    valid = set(int(a) for a in instance.get("article", []))
+    valid = set(get_ids(instance, "articles"))
     raw = instance.get("shells_article", {})
     s2a = {}
     for ak, sv in raw.items():
@@ -61,7 +93,7 @@ def build_shell_to_articles(instance):
 def compatible_articles_for_shell(instance, shell_id):
     if "_shell_to_articles" not in st.session_state:
         st.session_state["_shell_to_articles"] = build_shell_to_articles(instance)
-    valid = set(int(a) for a in instance.get("article", []))
+    valid = set(get_ids(instance, "articles"))
     m = st.session_state["_shell_to_articles"]
     return [int(a) for a in m.get(int(shell_id), []) if int(a) in valid]
 
@@ -69,11 +101,11 @@ def get_sections_for_page(instance, page_id):
     return [int(s) for s in instance.get("sections_page", {}).get(str(page_id), [])]
 
 def get_articles_for_section(instance, section_id):
-    return [int(a) for a in instance.get("article_sections", {}).get(str(section_id), [])]
+    return [int(a) for a in instance.get("articles_section", {}).get(str(section_id), [])]
 
 def get_pages_for_article(instance, art_id):
     pages = []
-    for page_id in instance.get("pages", []):
+    for page_id in get_ids(instance, "pages"):
         for sec in get_sections_for_page(instance, int(page_id)):
             if int(art_id) in get_articles_for_section(instance, sec):
                 pages.append(int(page_id))
@@ -118,7 +150,7 @@ def _newspaper_layers(instance, width_px):
     def xenc(f): return alt.X(f"{f}:Q", axis=NO_AXIS, scale=xs)
     def yenc(f): return alt.Y(f"{f}:Q", axis=NO_AXIS, scale=ys)
     bg_df = pd.DataFrame([{"x0":0,"x1":FW,"y0":0,"y1":FH}])
-    bg = alt.Chart(bg_df).mark_rect(fill="#fdf6e3",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(width=width_px,height=height_px)
+    bg = alt.Chart(bg_df).mark_rect(fill="#ffffff",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(width=width_px,height=height_px)
     margin_rects = [{"x0":0,"x1":MX,"y0":0,"y1":FH},{"x0":MX+W,"x1":FW,"y0":0,"y1":FH},
                     {"x0":MX,"x1":MX+W,"y0":0,"y1":MY},{"x0":MX,"x1":MX+W,"y0":MY+H,"y1":FH}]
     margin_layer = alt.Chart(pd.DataFrame(margin_rects)).mark_rect(fill="#e8dfc8",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(width=width_px,height=height_px)
@@ -127,8 +159,8 @@ def _newspaper_layers(instance, width_px):
     col_w = W/N_COLS
     col_lines = [{"x0":MX+i*col_w,"x1":MX+i*col_w,"y0":MY,"y1":MY+H} for i in range(1,N_COLS)]
     col_grid = alt.Chart(pd.DataFrame(col_lines)).mark_rule(stroke="#b0a090",strokeWidth=0.6,strokeDash=[3,4]).encode(x=alt.X("x0:Q",scale=xs),y=alt.Y("y0:Q",scale=ys),y2="y1:Q").properties(width=width_px,height=height_px)
-    page_border = alt.Chart(bg_df).mark_rect(fillOpacity=0,stroke="#888888",strokeWidth=0.8).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(width=width_px,height=height_px)
-    ss_border   = alt.Chart(ss_df).mark_rect(fillOpacity=0,stroke="#333333",strokeWidth=1.2).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(width=width_px,height=height_px)
+    page_border = alt.Chart(bg_df).mark_rect(fillOpacity=0,stroke="#888888",strokeWidth=1.5).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(width=width_px,height=height_px)
+    ss_border   = alt.Chart(ss_df).mark_rect(fillOpacity=0,stroke="#333333",strokeWidth=2.2).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(width=width_px,height=height_px)
     return [bg, margin_layer, ss_fill, col_grid, page_border, ss_border], FW, FH, height_px
 
 def _shift_df(df):
@@ -170,10 +202,10 @@ def box_chart(df, instance, width_px=460):
     def props(): return dict(width=width_px,height=height_px)
     sx0=LEFT_AXIS_W+MX; sx1=LEFT_AXIS_W+MX+W; sy0=TOP_HEADER_H+MY; sy1=TOP_HEADER_H+MY+H
     bg_df=pd.DataFrame([{"x0":0,"x1":FW,"y0":0,"y1":FH}])
-    bg=alt.Chart(bg_df).mark_rect(fill="#fdf6e3",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(**props())
+    bg=alt.Chart(bg_df).mark_rect(fill="#ffffff",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(**props())
     margin_rects=[{"x0":LEFT_AXIS_W,"x1":sx0,"y0":TOP_HEADER_H,"y1":FH},{"x0":sx1,"x1":FW,"y0":TOP_HEADER_H,"y1":FH},
                   {"x0":sx0,"x1":sx1,"y0":TOP_HEADER_H,"y1":sy0},{"x0":sx0,"x1":sx1,"y0":sy1,"y1":FH}]
-    margin_layer=alt.Chart(pd.DataFrame(margin_rects)).mark_rect(fill="#e8dfc8",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(**props())
+    margin_layer=alt.Chart(pd.DataFrame(margin_rects)).mark_rect(fill="#B5B5B5",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(**props())
     ss_df=pd.DataFrame([{"x0":sx0,"x1":sx1,"y0":sy0,"y1":sy1}])
     ss_fill=alt.Chart(ss_df).mark_rect(fill="#ffffff",stroke=None).encode(xenc("x0"),alt.X2("x1:Q"),yenc("y0"),alt.Y2("y1:Q")).properties(**props())
     col_unit=W/N_COLS
@@ -189,15 +221,14 @@ def box_chart(df, instance, width_px=460):
         col_header_rects.append({"x0":cx0,"x1":cx1,"y0":HEADER_TOP,"y1":HEADER_BOT,"col":i+1})
         col_header_labels.append({"lx":(cx0+cx1)/2,"ly":(HEADER_TOP+HEADER_BOT)/2,"label":f"Col. {i+1}"})
     col_hdr_rects=alt.Chart(pd.DataFrame(col_header_rects)).mark_rect(fill=HEADER_FILL,stroke=HEADER_STROKE,strokeWidth=0.8,cornerRadius=2).encode(x=alt.X("x0:Q",axis=NO_AXIS,scale=xs),x2="x1:Q",y=alt.Y("y0:Q",axis=NO_AXIS,scale=ys),y2="y1:Q",tooltip=[alt.Tooltip("col:Q",title="Spalte")]).properties(**props())
-    col_hdr_text=alt.Chart(pd.DataFrame(col_header_labels)).mark_text(fontSize=10,fontWeight="bold",color=HEADER_TEXT,baseline="middle",align="center").encode(x=alt.X("lx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ly:Q",axis=NO_AXIS,scale=ys),text=alt.Text("label:N")).properties(**props())
+    col_hdr_text=alt.Chart(pd.DataFrame(col_header_labels)).mark_text(fontSize=16,fontWeight="bold",color=HEADER_TEXT,baseline="middle",align="center").encode(x=alt.X("lx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ly:Q",axis=NO_AXIS,scale=ys),text=alt.Text("label:N")).properties(**props())
     hdr_line=alt.Chart(pd.DataFrame([{"x0":sx0,"x1":sx1,"y":sy0}])).mark_rule(stroke="#334155",strokeWidth=1.5).encode(x=alt.X("x0:Q",scale=xs),x2="x1:Q",y=alt.Y("y:Q",scale=ys)).properties(**props())
     ROW_TICKS=list(range(0,101,10))
     TICK_X1=LEFT_AXIS_W-0.04; TICK_X0=LEFT_AXIS_W-0.12; LABEL_X=LEFT_AXIS_W-0.14
     row_ticks_data=[{"x0":TICK_X0,"x1":TICK_X1,"y":OY+r/ROW_SCALE} for r in ROW_TICKS]
     row_labels_data=[{"lx":LABEL_X,"ly":OY+r/ROW_SCALE,"label":str(r)} for r in ROW_TICKS]
     row_ticks=alt.Chart(pd.DataFrame(row_ticks_data)).mark_rule(stroke="#64748b",strokeWidth=1.0).encode(x=alt.X("x0:Q",scale=xs),x2="x1:Q",y=alt.Y("y:Q",scale=ys)).properties(**props())
-    row_labels=alt.Chart(pd.DataFrame(row_labels_data)).mark_text(fontSize=9,color="#475569",baseline="middle",align="right").encode(x=alt.X("lx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ly:Q",axis=NO_AXIS,scale=ys),text=alt.Text("label:N")).properties(**props())
-    axis_line=alt.Chart(pd.DataFrame([{"x":sx0-MX*0.5,"y0":sy0,"y1":sy1}])).mark_rule(stroke="#94a3b8",strokeWidth=0.8).encode(x=alt.X("x:Q",scale=xs),y=alt.Y("y0:Q",scale=ys),y2="y1:Q").properties(**props())
+    row_labels=alt.Chart(pd.DataFrame(row_labels_data)).mark_text(fontSize=16,color="#475569",baseline="middle",align="right").encode(x=alt.X("lx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ly:Q",axis=NO_AXIS,scale=ys),text=alt.Text("label:N")).properties(**props())
     hgrid=alt.Chart(pd.DataFrame([{"x0":sx0,"x1":sx1,"y":OY+r/ROW_SCALE} for r in ROW_TICKS[1:-1]])).mark_rule(stroke="#d1cbc0",strokeWidth=0.4,strokeDash=[2,3]).encode(x=alt.X("x0:Q",scale=xs),x2="x1:Q",y=alt.Y("y:Q",scale=ys)).properties(**props())
     sdf=df.copy()
     sdf["col_start"]=(sdf["x0"]*COL_SCALE).round().astype(int)+1
@@ -212,9 +243,9 @@ def box_chart(df, instance, width_px=460):
     sdf["plx"]=(sdf["px0"]+sdf["px1"])/2; sdf["ply"]=(sdf["py0"]+sdf["py1"])/2
     sdf["psy"]=sdf["py0"]+0.10
     box_rects=alt.Chart(sdf).mark_rect(stroke="#1e293b",strokeWidth=1.4).encode(x=alt.X("px0:Q",axis=NO_AXIS,scale=xs),x2="px1:Q",y=alt.Y("py0:Q",axis=NO_AXIS,scale=ys),y2="py1:Q",color=alt.value("#dbeafe"),tooltip=[alt.Tooltip("box:N",title="Box"),alt.Tooltip("col_start:Q",title="Col. von"),alt.Tooltip("col_end:Q",title="Col. bis"),alt.Tooltip("n_cols:Q",title="Breite (Col.)"),alt.Tooltip("row_start:Q",title="Zeile von"),alt.Tooltip("row_end:Q",title="Zeile bis"),alt.Tooltip("n_rows:Q",title="Höhe (Zeilen)"),alt.Tooltip("num_shells:Q",title="#Shells"),alt.Tooltip("character:Q",title="capacity (chars)")]).properties(**props())
-    box_num=alt.Chart(sdf).mark_text(fontSize=14,fontWeight="bold",color="#1e3a5f",baseline="middle",align="center").encode(x=alt.X("plx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ply:Q",axis=NO_AXIS,scale=ys),text=alt.Text("box:N")).properties(**props())
-    box_sub=alt.Chart(sdf).mark_text(fontSize=8,color="#475569",baseline="top",align="center").encode(x=alt.X("plx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("psy:Q",axis=NO_AXIS,scale=ys),text=alt.Text("col_label:N")).properties(**props())
-    return alt.layer(bg,margin_layer,ss_fill,hgrid,col_grid,page_border,ss_border,col_hdr_rects,col_hdr_text,hdr_line,axis_line,row_ticks,row_labels,box_rects,box_sub,box_num).configure_view(stroke=None)
+    box_num=alt.Chart(sdf).mark_text(fontSize=30,fontWeight="bold",color="#1e3a5f",baseline="middle",align="center").encode(x=alt.X("plx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("ply:Q",axis=NO_AXIS,scale=ys),text=alt.Text("box:N")).properties(**props())
+    box_sub=alt.Chart(sdf).mark_text(fontSize=18,color="#475569",baseline="top",align="center").encode(x=alt.X("plx:Q",axis=NO_AXIS,scale=xs),y=alt.Y("psy:Q",axis=NO_AXIS,scale=ys),text=alt.Text("col_label:N")).properties(**props())
+    return alt.layer(bg,margin_layer,ss_fill,hgrid,col_grid,page_border,ss_border,col_hdr_rects,col_hdr_text,hdr_line,row_ticks,row_labels,box_rects,box_sub,box_num).configure_view(stroke=None)
 
 st.set_page_config(page_title="TNLAP Instance Explorer", layout="wide")
 st.title("TNLAP Instance Explorer")
@@ -231,13 +262,16 @@ with st.sidebar:
     if st.session_state.get("_instance_sig") != inst_sig:
         st.session_state["_instance_sig"] = inst_sig
         st.session_state.pop("_shell_to_articles", None)
+    raw_W, raw_H = raw_canvas_wh(instance)
     W, H = canvas_wh(instance)
-    st.caption(f"Grid-Ausdehnung: **{W:.0f} x {H:.0f}** Einheiten")
-    n_pages=len(instance.get("pages",[])); n_layouts=len(instance.get("layouts",[]))
-    n_articles=len(instance.get("article",[])); n_shells=len(instance.get("shells",[]))
-    n_sections=len(instance.get("sections",[]))
+    st.caption(f"Instanz-Koordinaten: **{raw_W:.0f} x {raw_H:.0f}** · Anzeige normalisiert auf **{W:.0f} x {H:.0f}**")
+    n_pages    = instance.get("pages", 0)
+    n_layouts  = instance.get("layouts", 0)
+    n_articles = instance.get("articles", 0)
+    n_shells   = instance.get("shells", 0)
+    n_sections = len(get_ids(instance, "sections"))
     st.markdown(f"**Seiten:** {n_pages} · **Layouts:** {n_layouts} · **Artikel:** {n_articles} · **Shells:** {n_shells} · **Sections:** {n_sections}")
-    pages = [int(p) for p in instance.get("pages", [])]
+    pages = get_ids(instance, "pages")
     if not pages: st.error("In der JSON fehlen `pages`."); st.stop()
     st.divider()
     page_id = st.selectbox("Seite wählen", pages, index=0)
@@ -364,7 +398,7 @@ with tab_explorer:
                     under_pct = 100.0*(smin-L)/smin if smin>0 and L<smin else 0.0
                     over_pct  = 100.0*(L-smax)/smax if smax>0 and L>smax else 0.0
                     fits = (L>=smin) and (L<=smax)
-                    rows.append({"article":int(a),"prio":pr,"length":int(L),"sections":", ".join(map(str,secs)),"fits":fits,"underfill_%":round(under_pct,2),"overfill_%":round(over_pct,2)})
+                    rows.append({"articles":int(a),"prio":pr,"length":int(L),"sections":", ".join(map(str,secs)),"fits":fits,"underfill_%":round(under_pct,2),"overfill_%":round(over_pct,2)})
                 adf = pd.DataFrame(rows)
                 if filter_on:
                     before = len(adf)
@@ -383,7 +417,7 @@ with tab_explorer:
 
 with tab_sections:
     st.subheader("📋 Sections")
-    for pid in [int(p) for p in instance.get("pages", [])]:
+    for pid in get_ids(instance, "pages"):
         st.markdown(f"### Seite {pid}")
         secs = get_sections_for_page(instance, pid)
         if not secs:

@@ -422,9 +422,9 @@ def create_model(
 if __name__ == "__main__":
 
     ############CONFIGURATION ############
-    instance_name = "HardP10A70V1(A)(232)" 
-    alpha_value = 0.5
-    pre_filter = True
+    instance_name = "P40_A200_B_118" 
+    alpha_value = 0.1
+    pre_filter = False
     pre_filter_tolerance = 0.6
 
 

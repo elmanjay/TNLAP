@@ -1,25 +1,22 @@
-
 import json
-import numpy as np
 import os
+
 
 def parse_json_from_file(file_name):
     with open(file_name, "r") as f:
         json_data = json.load(f)
 
-    print(json_data["sections"])
-
     canvas = json_data.get("canvas", None)
 
-    pages = json_data["pages"]
-    article = json_data["article"]
-    layouts = json_data["layouts"]
-    sections = json_data["sections"]
+    pages = list(range(1, json_data["pages"] + 1))
+    articles = list(range(1, json_data["articles"] + 1))
+    layouts = list(range(1, json_data["layouts"] + 1))
+    sections = list(range(1, json_data["sections"] + 1))
 
-    article_sections = {int(k): v for k, v in json_data["article_sections"].items()}
+    articles_section = {int(k): v for k, v in json_data["articles_section"].items()}
     sections_page = {int(k): v for k, v in json_data["sections_page"].items()}
-    layouts_pages = {int(k): v for k, v in json_data["layouts_pages"].items()}
-    box_layouts = {int(k): v for k, v in json_data["box_layouts"].items()}
+    layouts_page = {int(k): v for k, v in json_data["layouts_page"].items()}
+    boxes_layout = {int(k): v for k, v in json_data["boxes_layout"].items()}
 
     geometry_layout_box = {
         int(layout): {int(box): geom for box, geom in boxes.items()}
@@ -27,21 +24,21 @@ def parse_json_from_file(file_name):
     }
 
     shells_layout_box = {
-        int(layout): {int(box): hulls for box, hulls in boxes.items()}
+        int(layout): {int(box): shells for box, shells in boxes.items()}
         for layout, boxes in json_data["shells_layout_box"].items()
     }
 
     shells_article = {int(k): v for k, v in json_data["shells_article"].items()}
-    article_length = {int(k): v for k, v in json_data["article_length"].items()}
-    article_priority = {int(k): v for k, v in json_data["article_priority"].items()}
-    shell_params = {int(k): v for k, v in json_data["shell_params"].items()}
+    length_article = {int(k): v for k, v in json_data["length_article"].items()}
+    priority_article = {int(k): v for k, v in json_data["priority_article"].items()}
+    params_shell = {int(k): v for k, v in json_data["params_shell"].items()}
 
     return (
-        pages, article, layouts, sections,
-        article_sections, sections_page, layouts_pages,
-        box_layouts, geometry_layout_box,
-        shells_layout_box, shells_article, article_length,
-        shell_params, article_priority
+        pages, articles, layouts, sections,
+        articles_section, sections_page, layouts_page,
+        boxes_layout, geometry_layout_box,
+        shells_layout_box, shells_article, length_article,
+        params_shell, priority_article
     )
 
 
@@ -50,15 +47,16 @@ if __name__ == "__main__":
     name = os.path.join(base_dir, "Instances", "Diss", "Medium", "Instance_10_60_1.json")
 
     (
-     pages, article, layouts, sections,
-     article_sections, sections_page, layouts_pages,
-     box_layouts, geometry_layout_box,
-     shells_layout_box, shells_article, article_length,
-     shell_params, article_priority) = parse_json_from_file(name)
+        pages, articles, layouts, sections,
+        articles_section, sections_page, layouts_page,
+        boxes_layout, geometry_layout_box,
+        shells_layout_box, shells_article, length_article,
+        params_shell, priority_article
+    ) = parse_json_from_file(name)
 
     liste = []
-    for i in shell_params:
-        percentage = (shell_params[i]["max"] - shell_params[i]["min"]) / shell_params[i]["max"]
+    for i in params_shell:
+        percentage = (params_shell[i]["max"] - params_shell[i]["min"]) / params_shell[i]["max"]
         liste.append(percentage)
 
     print("canvas:", canvas)
