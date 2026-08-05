@@ -31,7 +31,7 @@ class GeneratorConfig:
 
     shell_type: str = "A"
 
-    layouts_per_page: Tuple[int, int] = (10, 20)
+    layouts_per_page: Tuple[int, int] = (5, 7)
     boxes_per_layout: Tuple[int, int] = (3, 5)
     shells_per_box: Tuple[int, int] = (6, 15)
     max_categories: int = 20
@@ -117,6 +117,56 @@ def _reading_order(layout: List[Rect]) -> List[Rect]:
 def box_capacity(width: int, height: int) -> int:
     """Upper bound on the body-text characters a box can hold."""
     return width * height * CHARS_PER_CELL
+
+#####
+def _get_vertical_chains(geometry: Dict[int, Dict[int, Dict[str, int]]]) -> Dict[int, List[Tuple[int, ...]]]:
+    """Ermittelt alle maximalen vertikalen Box-Ketten für jedes Layout und gibt diese als Dictionary zurück."""
+    layout_vertical_chains = {}
+    
+    for layout_id, boxes in geometry.items():
+        box_ids = list(boxes.keys())
+        
+        adj = {b_id: [] for b_id in box_ids}
+        in_degree = {b_id: 0 for b_id in box_ids}
+        
+        for i in range(len(box_ids)):
+            for j in range(len(box_ids)):
+                if i == j:
+                    continue
+                    
+                b1_id = box_ids[i]
+                b2_id = box_ids[j]
+                b1 = boxes[b1_id]
+                b2 = boxes[b2_id]
+                
+                # Bedingung 1: B1 ist exakt über B2
+                if b1["y"] + b1["h"] == b2["y"]:
+                    # Bedingung 2: Horizontaler Überlapp
+                    overlap_left = max(b1["x"], b2["x"])
+                    overlap_right = min(b1["x"] + b1["w"], b2["x"] + b2["w"])
+                    
+                    if overlap_left < overlap_right:
+                        adj[b1_id].append(b2_id)
+                        in_degree[b2_id] += 1
+                        
+        roots = [b_id for b_id in box_ids if in_degree[b_id] == 0 and len(adj[b_id]) > 0]
+        chains = []
+        
+        def dfs(current_node, current_path):
+            if not adj[current_node]:
+                if len(current_path) > 1:
+                    chains.append(tuple(current_path))
+                return
+            for child in adj[current_node]:
+                dfs(child, current_path + [child])
+                
+        for root in roots:
+            dfs(root, [root])
+            
+        layout_vertical_chains[layout_id] = sorted(chains)
+        
+    return layout_vertical_chains
+####
 
 
 # ---------------------------------------------------------------------------
@@ -311,6 +361,9 @@ def create_instance(
 
     pages_layouts, layouts = _assign_layouts_to_pages(pages, config, rng)
     geometry = _build_layout_geometry(len(layouts), config, rng)
+    ####
+    layout_vertical_chains = _get_vertical_chains(geometry)
+    ####
     box_layouts = {lid: sorted(boxes) for lid, boxes in geometry.items()}
 
     shells_layout_box, shell_params = _build_shells(geometry, config, rng)
@@ -340,6 +393,7 @@ def create_instance(
         "sections": len(sections),
         "articles_section": article_sections,
         "sections_page": sections_page,
+        #"layout_vertical_chains": layout_vertical_chains,
     }
 
 
