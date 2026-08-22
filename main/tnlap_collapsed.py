@@ -207,7 +207,7 @@ def create_model(
         name="NB8"
     )
 
-    return model, shells_layout_box_article, x, y, z, w, pair_case
+    return model#, shells_layout_box_article, x, y, z, w, pair_case
 
 
 def report_solution(model, x, w, pair_case, box_layouts, article_priority):
