@@ -3,7 +3,9 @@ import os
 #from analyse import analyse_solution
 #from analyse_ressorts import analyse_solution
 #from analyse_bugs import check_constraint_violations
-from model import create_model
+from tnlap import create_model
+#from tnlap_collapsed import create_model
+#from tnlap_dynamic import create_model
 from gurobipy import GRB
 #from analyse_new import analyse_solution
 import pandas as pd
