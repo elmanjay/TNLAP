@@ -7,7 +7,7 @@ from analyse import analyse_solution
 def create_model(
     pages, article, layouts, sections, article_sections, sections_page, layouts_pages,
     box_layouts, shells_layout_box, shells_article, article_length, shell_params,
-    article_priority, alpha_value, pre_filter, pref_filter_tolerance
+    article_priority, alpha_value, pre_filter, pref_filter_tolerance, geometry_layout_box, layout_vertical_chains
 ):
     prioritäten = [1, 0.5, 0.1, 0]
     kategorien = ["A", "B", "C", "D"]
@@ -406,10 +406,7 @@ def create_model(
         name="NB18"
     )
 
-    #model.addConstr(x[7,2,2,1,1] ==1)
-    #model.addConstr(x[1,1,3,4,114] == 1 )
-
-    return model, shells_layout_box_article, x,y
+    return model#, shells_layout_box_article, x,y
 
 
 if __name__ == "__main__":
