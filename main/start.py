@@ -43,8 +43,8 @@ if __name__ == "__main__":
         
         print("start building model...")
         model = create_model(
-            pages, article, layouts, resorts, article_resorts, resort_page, layouts_pages,
-            box_layouts, hull_layout_box, hull_article, article_length, hull_params,
+            pages, article, layouts, sections, article_sections, sections_page, layouts_pages,
+            box_layouts, shells_layout_box, shells_article, article_length, shell_params,
             article_priority, alpha_value, pre_f, pre_f_tol, geometry_layout_box, layout_vertical_chains #NEU
         )
       
