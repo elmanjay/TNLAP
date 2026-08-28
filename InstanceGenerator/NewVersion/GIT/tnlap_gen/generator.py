@@ -119,8 +119,9 @@ def box_capacity(width: int, height: int) -> int:
     return width * height * CHARS_PER_CELL
 
 #####
-def _get_vertical_chains(geometry: Dict[int, Dict[int, Dict[str, int]]]) -> Dict[int, List[Tuple[int, ...]]]:
-    """Ermittelt alle maximalen vertikalen Box-Ketten für jedes Layout und gibt diese als Dictionary zurück."""
+def get_vertical_chains(geometry: Dict[int, Dict[int, Dict[str, int]]]) -> Dict[int, List[Tuple[int, ...]]]:
+    """Ermittelt alle maximalen vertikalen Box-Ketten für jedes Layout und gibt diese als Dictionary zurück.
+       Boxen, die einzeln in einer Spalte stehen, werden als Ketten der Länge 1 ausgegeben."""
     layout_vertical_chains = {}
     
     for layout_id, boxes in geometry.items():
@@ -149,14 +150,18 @@ def _get_vertical_chains(geometry: Dict[int, Dict[int, Dict[str, int]]]) -> Dict
                         adj[b1_id].append(b2_id)
                         in_degree[b2_id] += 1
                         
-        roots = [b_id for b_id in box_ids if in_degree[b_id] == 0 and len(adj[b_id]) > 0]
+        # ÄNDERUNG 1: Jeder Knoten ohne Box über sich ist ein Startpunkt, 
+        # unabhängig davon, ob er noch Boxen unter sich hat.
+        roots = [b_id for b_id in box_ids if in_degree[b_id] == 0]
         chains = []
         
         def dfs(current_node, current_path):
+            # Wenn keine Box mehr darunter kommt, ist die Kette zu Ende
             if not adj[current_node]:
-                if len(current_path) > 1:
-                    chains.append(tuple(current_path))
+                # ÄNDERUNG 2: Wir speichern den Pfad immer, auch wenn er nur Länge 1 hat
+                chains.append(tuple(current_path))
                 return
+                
             for child in adj[current_node]:
                 dfs(child, current_path + [child])
                 
