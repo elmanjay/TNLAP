@@ -52,6 +52,7 @@ if __name__ == "__main__":
         model.setParam('TimeLimit', 3600)
         model.Params.LogFile = os.path.join(sol_dir, f"{instance_name}.log")
         model.Params.Threads = 1
+        #model.Params.NonConvex = 2 #### aktivieren für nicht lineares dynamisches Modell
         model.write(os.path.join(lp_dir, f"{instance_name}.lp"))
         #model.Params.OutputFlag = 0  # 🔇 KEIN TERMINAL-OUTPUT
         model.optimize()
