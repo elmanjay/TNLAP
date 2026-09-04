@@ -29,7 +29,7 @@ if __name__ == "__main__":
     pre_f_tol = 0.3
 
     # 🔁 Instanzen definieren
-    instance_base = "TestP15A100V{}(B)"
+    instance_base = "TestP1A3V{}(B)"
     instances = [instance_base.format(i) for i in range(1, 2)]#6
 
     results = []
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
         name = os.path.join(instance_instance_dir, f"{instance_name}.json")
 
-        pages, article, layouts, resorts, article_resorts, resort_page, layouts_pages, box_layouts, geometry_layout_box, hull_layout_box, hull_article, article_length, hull_params, article_priority, layout_vertical_chains = parse_json_from_file(name)
+        pages, article, layouts, sections, article_sections, sections_page, layouts_pages, box_layouts, geometry_layout_box, shells_layout_box, shells_article, article_length, shell_params, article_priority, layout_vertical_chains = parse_json_from_file(name)
         
         print("start building model...")
         model = create_model(
