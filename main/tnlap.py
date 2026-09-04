@@ -1,7 +1,6 @@
 from gurobipy import Model, GRB, quicksum
 from parser import parse_json_from_file
 import os
-from analyse import analyse_solution
 
 
 def create_model(
@@ -461,7 +460,7 @@ if __name__ == "__main__":
     else:
         model.write(os.path.join(lp_dir, f"{instance_name}.lp"))
         model.write(os.path.join(sol_dir, f"{instance_name}.sol"))
-        analyse_solution(model, article_length, shell_params, article_priority)
+        
 
 
     
