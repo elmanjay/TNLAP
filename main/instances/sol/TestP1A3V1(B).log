@@ -1,0 +1,175 @@
+
+Gurobi 13.0.2 (mac64[arm]) logging started Fri Sep  4 13:42:52 2026
+
+Set parameter LogFile to value "/Users/kalle/Downloads/TNLAP-main/main/Instances/sol/TestP1A3V1(B).log"
+Set parameter Threads to value 1
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (mac64[arm] - Darwin 25.6.0 25G83)
+
+CPU model: Apple M5 Pro
+Thread count: 15 physical cores, 15 logical processors, using up to 1 threads
+
+Non-default parameters:
+TimeLimit  3600
+Threads  1
+
+Optimize a model with 67 rows, 46 columns and 243 nonzeros (Max)
+Model fingerprint: 0x445bcba7
+Model has 1 linear objective coefficients
+Variable types: 22 continuous, 24 integer (24 binary)
+Coefficient statistics:
+  Matrix range     [1e-02, 1e+04]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+04]
+
+Presolve removed 63 rows and 42 columns
+Presolve time: 0.00s
+Presolved: 4 rows, 4 columns, 8 nonzeros
+Variable types: 0 continuous, 4 integer (4 binary)
+Found heuristic solution: objective 0.6378907
+
+Root relaxation: objective 8.421054e-01, 1 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+*    0     0               0       0.8421054    0.84211  0.00%     -    0s
+
+Explored 1 nodes (1 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 15 available processors)
+
+Solution count 2: 0.842105 0.637891 
+No other solutions better than 0.842105
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 8.421053996481e-01, best bound 8.421053996481e-01, gap 0.0000%
+
+Gurobi 13.0.2 (mac64[arm]) logging started Fri Sep  4 15:06:52 2026
+
+Set parameter LogFile to value "/Users/kalle/Downloads/TNLAP-main/main/Instances/sol/TestP1A3V1(B).log"
+Set parameter Threads to value 1
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (mac64[arm] - Darwin 25.6.0 25G83)
+
+CPU model: Apple M5 Pro
+Thread count: 15 physical cores, 15 logical processors, using up to 1 threads
+
+Non-default parameters:
+TimeLimit  3600
+Threads  1
+
+Optimize a model with 75 rows, 55 columns and 276 nonzeros (Max)
+Model fingerprint: 0x43d4c9d6
+Model has 1 linear objective coefficients
+Model has 6 quadratic constraints
+Variable types: 28 continuous, 27 integer (24 binary)
+Coefficient statistics:
+  Matrix range     [3e-01, 1e+04]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e+03, 1e+04]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 5e+00]
+  RHS range        [1e+00, 1e+04]
+
+Presolve removed 49 rows and 32 columns
+Presolve time: 0.00s
+Presolved: 42 rows, 24 columns, 146 nonzeros
+Presolved model has 4 bilinear constraint(s)
+
+Solving non-convex MIQCP to global optimality
+
+Variable types: 9 continuous, 15 integer (10 binary)
+
+Root relaxation: objective 1.000000e+00, 9 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+*    0     0               0       1.0000000    1.00000  0.00%     -    0s
+
+Explored 1 nodes (9 simplex iterations) in 0.01 seconds (0.00 work units)
+Thread count was 1 (of 15 available processors)
+
+Solution count 1: 1 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 1.000000000000e+00, best bound 1.000000000000e+00, gap 0.0000%
+
+Gurobi 13.0.2 (mac64[arm]) logging started Fri Sep  4 15:10:18 2026
+
+Set parameter LogFile to value "/Users/kalle/Downloads/TNLAP-main/main/Instances/sol/TestP1A3V1(B).log"
+Set parameter Threads to value 1
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (mac64[arm] - Darwin 25.6.0 25G83)
+
+CPU model: Apple M5 Pro
+Thread count: 15 physical cores, 15 logical processors, using up to 1 threads
+
+Non-default parameters:
+TimeLimit  3600
+Threads  1
+
+Optimize a model with 15 rows, 9 columns and 30 nonzeros (Max)
+Model fingerprint: 0xa70a4531
+Model has 5 linear objective coefficients
+Variable types: 0 continuous, 9 integer (9 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [2e-01, 3e-01]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Found heuristic solution: objective 0.8015988
+Presolve removed 11 rows and 5 columns
+Presolve time: 0.00s
+Presolved: 4 rows, 4 columns, 8 nonzeros
+Variable types: 0 continuous, 4 integer (4 binary)
+
+Root relaxation: cutoff, 0 iterations, 0.00 seconds (0.00 work units)
+
+Explored 1 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 15 available processors)
+
+Solution count 1: 0.801599 
+No other solutions better than 0.801599
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 8.015987774382e-01, best bound 8.015987774382e-01, gap 0.0000%
+
+Gurobi 13.0.2 (mac64[arm]) logging started Fri Sep  4 15:18:07 2026
+
+Set parameter LogFile to value "/Users/kalle/Downloads/TNLAP-main/main/Instances/sol/TestP1A3V1(B).log"
+Set parameter Threads to value 1
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (mac64[arm] - Darwin 25.6.0 25G83)
+
+CPU model: Apple M5 Pro
+Thread count: 15 physical cores, 15 logical processors, using up to 1 threads
+
+Non-default parameters:
+TimeLimit  3600
+Threads  1
+
+Optimize a model with 15 rows, 9 columns and 30 nonzeros (Max)
+Model fingerprint: 0xea80c9ff
+Model has 5 linear objective coefficients
+Variable types: 0 continuous, 9 integer (9 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [2e-01, 3e-01]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+
+Found heuristic solution: objective 0.8421054
+Presolve removed 11 rows and 5 columns
+Presolve time: 0.00s
+Presolved: 4 rows, 4 columns, 8 nonzeros
+Variable types: 0 continuous, 4 integer (4 binary)
+
+Root relaxation: cutoff, 0 iterations, 0.00 seconds (0.00 work units)
+
+Explored 1 nodes (0 simplex iterations) in 0.01 seconds (0.00 work units)
+Thread count was 1 (of 15 available processors)
+
+Solution count 1: 0.842105 
+No other solutions better than 0.842105
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 8.421053996481e-01, best bound 8.421053996481e-01, gap 0.0000%
