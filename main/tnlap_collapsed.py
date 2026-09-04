@@ -1,7 +1,7 @@
 from gurobipy import Model, GRB, quicksum
 from parser import parse_json_from_file
 import os
-import analyse
+#import analyse
 
 
 # =====================================================================
@@ -34,8 +34,8 @@ G_OVER_FIX = 0.01
 G_OVER_VAR = 0.49
 G_FEHLT = 1
 
-T_OVER = 0.2
-T_UNDER = 0.15
+T_OVER = 0.3
+T_UNDER = 0.3
 
 
 def classify_pair(length, mn, mx):
@@ -62,7 +62,7 @@ def classify_pair(length, mn, mx):
 def create_model(
     pages, article, layouts, sections, article_sections, sections_page, layouts_pages,
     box_layouts, shells_layout_box, shells_article, article_length, shell_params,
-    article_priority, alpha_value, pre_filter, pref_filter_tolerance
+    article_priority, alpha_value, pre_filter, pref_filter_tolerance, geometry_layout_box, layout_vertical_chains
 ):
     alpha = alpha_value
 
@@ -272,4 +272,4 @@ if __name__ == "__main__":
     else:
         model.write(os.path.join(sol_dir, f"{instance_name}_collapsed.sol"))
         report_solution(model, x, w, pair_case, box_layouts, article_priority)
-        analyse.analyse_solution(model, article_length, shell_params, article_priority)
+        #analyse.analyse_solution(model, article_length, shell_params, article_priority)
